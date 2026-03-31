@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.naver.jbb.dao.BoardMapper">
+
+    <!--게시글 목록 -->
+    <select id="selectAll" resultType="com.naver.jbb.domain.BoardDTO">
+        SELECT b.bno, b.title, b.content, b.img1, b.img2, b.img3, b.b_bc_code, b.view_cnt,
+        b.comment_cnt, b.reg_date, b.writer, b.up_date, c.bc_name
+        FROM board AS b
+        JOIN category AS c
+        ON b.b_bc_code = c.bc_code
+        ORDER BY b.bno DESC
+    </select>
+
+    <!-- 중분류에 해당하는 게시글 목록 -->
+    <select id="getPostsByCategory" resultType="com.naver.jbb.domain.BoardDTO" parameterType="map">
+        SELECT b.bno, b.title, b.content, b.writer, b.view_cnt, b.comment_cnt, b.reg_date, b.img1, c.bc_name
+        FROM board AS b
+        JOIN category AS c
+        ON b.b_bc_code = c.bc_code
+        WHERE b_bc_code = #{subCategory}
+        ORDER BY bno DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <!-- 중분류에 해당하는 게시물 개수 -->
+    <select id="Subcount" resultType="int">
+        SELECT count(*) FROM board
+        WHERE b_bc_code = #{value}
+    </select>
+
+    <!-- 전체 게시물 개수 -->
+    <select id="count" resultType="int">
+        SELECT count(*) FROM board
+    </select>
+
+    <!-- select 공통부분 -->
+    <sql id="selectFromBoard">
+        SELECT bno, title, content, img1, img2, img3, b_bc_code, view_cnt,
+        comment_cnt, reg_date, writer, up_date
+        FROM board
+    </sql>
+
+    <!-- 게시글 상세보기 -->
+    <select id="select" parameterType="int" resultType="com.naver.jbb.domain.BoardDTO">
+        <include refid="selectFromBoard"/>
+        WHERE bno=#{bno}
+    </select>
+
+    <!-- 게시글 조회수 증가 -->
+    <update id="increaseViewCnt" parameterType="int">
+        UPDATE board
+        SET view_cnt = view_cnt + 1
+        WHERE bno = #{bno}
+    </update>
+
+    <!-- 게시물 등록 -->
+    <insert id="insert" parameterType="com.naver.jbb.domain.BoardDTO">
+        INSERT INTO board (title, content, writer, b_bc_code, img1, img2, img3)
+        VALUES (#{title}, #{content}, #{writer}, #{b_bc_code}, #{img1}, #{img2}, #{img3})
+    </insert>
+
+    <!-- 게시물 수정 -->
+    <update id="update" parameterType="com.naver.jbb.domain.BoardDTO">
+        UPDATE board
+        SET title=#{title}, content=#{content}, img1=#{img1}, img2=#{img2}, img3=#{img3}, reg_date=now()
+        WHERE bno=#{bno} and writer=#{writer}
+    </update>
+
+    <!-- 게시물 삭제 -->
+    <delete id="delete">
+        DELETE FROM board WHERE bno=#{bno} and writer=#{writer}
+    </delete>
+
+    <!-- 전체 게시물 삭제 -->
+    <delete id="deleteAll">
+        DELETE FROM board
+    </delete>
+
+    <!-- 게시물 검색 공통부분 -->
+    <sql id="searchCondition">
+        <choose>
+            <when test='option=="T"'>
+                AND title LIKE concat('%', #{keyword}, '%')
+            </when>
+            <when test='option=="W"'>
+                AND writer LIKE concat('%', #{keyword}, '%')
+            </when>
+            <otherwise>
+                AND (title LIKE concat('%', #{keyword}, '%')
+                OR content LIKE concat('%', #{keyword}, '%'))
+            </otherwise>
+        </choose>
+    </sql>
+
+    <!-- 게시물 검색 -->
+    <select id="searchSelectPage" parameterType="com.naver.jbb.domain.SearchCondition" resultType="com.naver.jbb.domain.BoardDTO">
+        SELECT b.bno, b.title, b.content, b.writer, b.view_cnt, b.comment_cnt, b.reg_date, b.img1, c.bc_name
+        FROM board AS b
+        JOIN category AS c
+        ON b.b_bc_code = c.bc_code
+        WHERE true
+        <include refid="searchCondition"/>
+        ORDER BY bno DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <!-- 검색된 게시물 개수 -->
+    <select id="searchResultCnt" parameterType="com.naver.jbb.domain.SearchCondition" resultType="int">
+        SELECT count(*)
+        FROM board
+        WHERE true
+        <include refid="searchCondition"/>
+    </select>
+
+    <!-- 댓글 개수 -->
+    <update id="updateCommentCnt" parameterType="map">
+        UPDATE board
+        SET comment_cnt = comment_cnt + #{cnt}
+        WHERE bno = #{bno}
+    </update>
+
+    <!-- 최신글 5개 가져오기 -->
+    <select id="getLatestPosts" resultType="com.naver.jbb.domain.BoardDTO">
+        SELECT * FROM board
+        ORDER BY bno DESC
+        LIMIT 5
+    </select>
+    <!-- 인기글 5개 가져오기 -->
+    <select id="getPopularPosts" resultType="com.naver.jbb.domain.BoardDTO">
+        SELECT * FROM board
+        ORDER BY view_cnt DESC
+        LIMIT 5
+    </select>
+
+    <!-- 내가 쓴 글 목록 -->
+    <select id="myboardlist" parameterType="map" resultType="com.naver.jbb.domain.BoardDTO">
+        SELECT b.bno, b.title, b.content, b.img1, b.img2, b.img3, b.b_bc_code, b.view_cnt,
+               b.comment_cnt, b.reg_date, b.writer, b.up_date, c.bc_name
+        FROM board AS b
+        JOIN category AS c
+        ON b.b_bc_code = c.bc_code
+        WHERE b.writer=#{writer}
+        ORDER BY b.bno DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <!-- 내가 좋아요 한 글 목록 -->
+    <select id="mylikeslist" parameterType="map" resultType="com.naver.jbb.domain.BoardDTO">
+        SELECT b.bno, b.title, b.writer, b.img1, b.reg_date, l.id, c.bc_name
+        FROM board AS b
+        JOIN likes AS l
+        ON b.bno = l.board_bno
+        JOIN category AS c
+        ON b.b_bc_code = c.bc_code
+        WHERE l.user_id=#{user_id}
+        ORDER BY b.bno DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <!-- 내가 쓴 댓글 -->
+    <select id="mycommentlist" parameterType="map" resultType="com.naver.jbb.domain.BoardDTO">
+        SELECT b.bno, b.title, b.writer, b.img1, c.comment, c.commenter, c.reg_date, t.bc_name
+        FROM board AS b
+        JOIN comment AS c
+        ON b.bno = c.bno
+        JOIN category AS t
+        ON b.b_bc_code = t.bc_code
+        WHERE c.commenter=#{commenter}
+        ORDER BY c.reg_date DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <!-- 게시물 임시저장하기 -->
+    <insert id="insertDraft" parameterType="com.naver.jbb.domain.BoardDraftDTO">
+        Insert Into board_draft
+        (writer, title, content, img1, img2, img3, b_bc_code, kip_cnt)
+        VALUES
+        (#{writer}, #{title}, #{content}, #{img1}, #{img2}, #{img3}, #{b_bc_code}, #{kip_cnt})
+    </insert>
+    <!-- 기존 임시저장 게시물 업데이트 -->
+    <update id="updateDraft" parameterType="com.naver.jbb.domain.BoardDraftDTO">
+        UPDATE board_draft
+        SET title = #{title},
+        content = #{content},
+        img1 = #{img1},
+        img2 = #{img2},
+        img3 = #{img3},
+        b_bc_code = #{b_bc_code},
+        kip_cnt = #{kip_cnt} + 1, <!-- 저장 횟수 증가 -->
+        up_date = NOW()
+        WHERE draft_id = #{draft_id}
+    </update>
+    <!-- 작성자별 최신 Draft 한 건 조회 -->
+    <select id="selectDraftByWriter" parameterType="String" resultType="com.naver.jbb.domain.BoardDraftDTO">
+        SELECT draft_id, title, content, img1, img2, img3, b_bc_code, kip_cnt, up_date
+        FROM board_draft
+        WHERE writer = #{writer}
+        ORDER BY up_date DESC
+        LIMIT 1
+    </select>
+    <!-- Draft 삭제 (최종 게시 후) -->
+    <delete id="deleteDraft" parameterType="int">
+        DELETE FROM board_draft
+        WHERE draft_id = #{draft_id}
+    </delete>
+
+    <!-- 글쓴이 가져오기 -->
+    <select id="findWriterByBno" parameterType="int" resultType="String">
+        SELECT writer
+        FROM board
+        WHERE bno = #{bno}
+    </select>
+</mapper>

@@ -1,0 +1,14 @@
+package com.naver.jbb.service;
+
+import java.util.List;
+
+import com.naver.jbb.domain.CategoryDTO;
+
+public interface CategoryService {
+
+    //카테고리 리스트 불러오기
+    List<CategoryDTO> getAllCategories();
+
+    //중분류 카테고리 리스트 불러오기
+    List<CategoryDTO> getSubCategories(Integer mainCategory);
+}
