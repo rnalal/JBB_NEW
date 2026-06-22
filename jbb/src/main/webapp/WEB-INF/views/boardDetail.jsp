@@ -528,11 +528,6 @@
     </div>
   </c:if>
 
-<!-- 전역변수 -->
-<script>
-  var contextPath = "${pageContext.request.contextPath}";
-</script>
-
 <!-- textarea 크기 자동 조절 -->
 <script>
 $(window).on("load resize", function () {
@@ -638,16 +633,6 @@ $(document).ready(function () {
             $likeButton.html("<span class='heart'>🤍</span><span class='likeCount'>" + likeCount + "</span>");
         }
     }
-});
-</script>
-
-<!-- 홈으로 이동 -->
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    const homeBtn = document.getElementById("home-btn");
-    homeBtn.addEventListener("click", function () {
-        window.location.href = "<c:url value='/' />";
-    });
 });
 </script>
 

@@ -17,6 +17,16 @@ public class AuthInterceptor implements HandlerInterceptor {
         HttpSession session = request.getSession(false);
 
         String servletPath = request.getServletPath();
+        String method = request.getMethod();
+
+        //댓글 조회는 비로그인도 허용
+        if("/comments".equals(servletPath) && "GET".equalsIgnoreCase(method)){
+            return true;
+        }
+        //좋아요 상태 조회 허용
+        if (servletPath.startsWith("/likes/isLiked/") && "GET".equalsIgnoreCase(method)) {
+            return true;
+        }
 
         if (session == null || session.getAttribute("id") == null) {
             if (servletPath.startsWith("/admin")) {
